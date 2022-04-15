@@ -1,28 +1,3 @@
-// DEKLAROWANIE ZMIENNYCH
-// var nazwa1 = 'wartosc';
-// let nazwa1 = 'wartosc';
-// const nazwa2 = 'wartosc';
-
-// DOM - DOCUMENT OBJECT MODEL
-// DOM properties !== HTML attributes
-// console.log(element); -> element
-// console.dir(element); -> przedstawienie w DOM
-
-// DOM EVENT
-
-// TWORZENIE FUNKCJI
-// 1. function name() {}
-
-// STRINGS IN JAVASCRIPT
-// "text" === 'text' === `text`
-// `text ${zmienna}`
-
-// EVENT DELEGATION
-
-// = przypisanie
-// == porównanie wartości ze zmianą typów
-// === porównanie wartości bez zmiany typów
-
 let addTaskForm = document.querySelector("form#addTaskForm");
 let deleteTaskBtn = document.querySelector("#deleteTaskBtn");
 let confirmDeleteBtn = document.querySelector("#confirmDeleteBtn");
@@ -35,8 +10,6 @@ let deleteTaskModal = new bootstrap.Modal(
 
 let unfinishedTasks = [];
 
-console.dir(addTaskForm);
-
 addTaskForm.addEventListener("submit", function (event) {
   event.preventDefault();
   if (addTaskForm.elements["title"].value) {
@@ -48,7 +21,6 @@ addTaskForm.addEventListener("submit", function (event) {
     unfinishedTasks.push(newTask);
     showUnfinishedTasks();
     addTaskForm.reset();
-    console.log(unfinishedTasks);
   }
 });
 
