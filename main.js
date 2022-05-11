@@ -11,9 +11,21 @@ let deleteTaskModal = new bootstrap.Modal(
   document.querySelector("#deleteModal")
 );
 let editTaskModal = new bootstrap.Modal(document.querySelector("#editModal"));
+const UNFINISHED_TASKS = "unfinished-tasks";
+const FINISHED_TASKS = "finished-tasks";
 
 let unfinishedTasks = [];
 let finishedTasks = [];
+
+if (localStorage.getItem(UNFINISHED_TASKS)) {
+  unfinishedTasks = JSON.parse(localStorage.getItem(UNFINISHED_TASKS));
+  showUnfinishedTasks();
+}
+
+if (localStorage.getItem(FINISHED_TASKS)) {
+  finishedTasks = JSON.parse(localStorage.getItem(FINISHED_TASKS));
+  showFinishedTasks();
+}
 
 addTaskForm.addEventListener("submit", function (event) {
   event.preventDefault();
@@ -24,6 +36,7 @@ addTaskForm.addEventListener("submit", function (event) {
       id: Date.now(),
     };
     unfinishedTasks.push(newTask);
+    localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
     showUnfinishedTasks();
     addTaskForm.reset();
   }
@@ -37,6 +50,7 @@ unfinishedTasksContainer.addEventListener("click", function (e) {
     deleteTaskModal.show();
     confirmDeleteBtn.onclick = function () {
       unfinishedTasks.splice(index, 1);
+      localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
       showUnfinishedTasks();
       deleteTaskModal.hide();
     };
@@ -66,6 +80,8 @@ unfinishedTasksContainer.addEventListener("click", function (e) {
     });
     finishedTasks.push(unfinishedTasks[index]);
     unfinishedTasks.splice(index, 1);
+    localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
+    localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
     showUnfinishedTasks();
     showFinishedTasks();
   }
@@ -77,6 +93,7 @@ finishedTasksContainer.addEventListener("click", function (e) {
       return +value.id === +e.target.parentElement.id;
     });
     finishedTasks.splice(index, 1);
+    localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
     showFinishedTasks();
   }
 
@@ -95,6 +112,7 @@ finishedTasksContainer.addEventListener("click", function (e) {
 
 deleteAllDoneTasksBtn.addEventListener("click", function () {
   finishedTasks = [];
+  localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
   showFinishedTasks();
 });
 
