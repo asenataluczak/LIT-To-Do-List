@@ -1,16 +1,16 @@
-let addTaskForm = document.querySelector("form#addTaskForm");
-let editTaskForm = document.querySelector("form#editTaskForm");
-let deleteTaskBtn = document.querySelector("#deleteTaskBtn");
-let confirmDeleteBtn = document.querySelector("#confirmDeleteBtn");
-let deleteAllDoneTasksBtn = document.querySelector("#deleteAllDoneTasksBtn");
-let unfinishedTasksContainer = document.querySelector(
+const addTaskForm = document.querySelector("form#addTaskForm");
+const editTaskForm = document.querySelector("form#editTaskForm");
+const deleteTaskBtn = document.querySelector("#deleteTaskBtn");
+const confirmDeleteBtn = document.querySelector("#confirmDeleteBtn");
+const deleteAllDoneTasksBtn = document.querySelector("#deleteAllDoneTasksBtn");
+const unfinishedTasksContainer = document.querySelector(
   "#unfinishedTasksContainer"
 );
-let finishedTasksContainer = document.querySelector("#finishedTasksContainer");
-let deleteTaskModal = new bootstrap.Modal(
+const finishedTasksContainer = document.querySelector("#finishedTasksContainer");
+const deleteTaskModal = new bootstrap.Modal(
   document.querySelector("#deleteModal")
 );
-let editTaskModal = new bootstrap.Modal(document.querySelector("#editModal"));
+const editTaskModal = new bootstrap.Modal(document.querySelector("#editModal"));
 const UNFINISHED_TASKS = "unfinished-tasks";
 const FINISHED_TASKS = "finished-tasks";
 
@@ -43,9 +43,9 @@ addTaskForm.addEventListener("submit", function (event) {
 });
 
 unfinishedTasksContainer.addEventListener("click", function (e) {
-  const index = unfinishedTasks.findIndex(function (value) {
-    return +value.id === +e.target.parentElement.id;
-  });
+  const index = unfinishedTasks.findIndex(
+    (value) => +value.id === +e.target.parentElement.id
+  );
   if (e.target.id === "deleteTaskBtn") {
     deleteTaskModal.show();
     confirmDeleteBtn.onclick = function () {
