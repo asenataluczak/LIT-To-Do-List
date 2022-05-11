@@ -2,6 +2,7 @@ let addTaskForm = document.querySelector("form#addTaskForm");
 let editTaskForm = document.querySelector("form#editTaskForm");
 let deleteTaskBtn = document.querySelector("#deleteTaskBtn");
 let confirmDeleteBtn = document.querySelector("#confirmDeleteBtn");
+let deleteAllDoneTasksBtn = document.querySelector("#deleteAllDoneTasksBtn");
 let unfinishedTasksContainer = document.querySelector(
   "#unfinishedTasksContainer"
 );
@@ -70,33 +71,32 @@ unfinishedTasksContainer.addEventListener("click", function (e) {
   }
 });
 
-// ODHACZANIE
-// 1. refactoring funkcji do wyświetlania tasków
-// ----
-// 2. dodać finished tasks container w htmlu
-// 3. stworzyć finishedTasks tablicę
-// -- > łapka w teamsach
-// 4. do event listenera na unfinishedTasksContainer dodać warunek (checkbox i checkbox.value === true)
-// w tym warunku
-// 5. dodajemy taska do tablicy finishedTasks
-// 6. usuwamy taska z tablicy unfinishedTasks
-// 7. wyświetlamy obie tablice
-// 8. wyświetlać Delete all done tasks button tylko wtedy, kiedy mamy jakieś skończone taski
+finishedTasksContainer.addEventListener("click", function (e) {
+  if (e.target.id === "deleteTaskBtn") {
+    const index = finishedTasks.findIndex(function (value) {
+      return +value.id === +e.target.parentElement.id;
+    });
+    finishedTasks.splice(index, 1);
+    showFinishedTasks();
+  }
 
-// EDYTOWANIE
-// 1. stworzenie bootstrapowego modalu
-// 2. event handler na przycisk edycji (warunek - przycisk musi mieć id=editTaskBtn)
-// w tym warunku
-// 3. pokazać modal
-// 4. wypełnić value forma w modalu, value z taska
-// -----
-// 5. przypisać funkcję do confirmEditTask, która zedytuje taska
-// w tej funkcji
-// 6. stworzyć nowy obiekt editedTask z wartościami z forma
-// -- > łapka w teamsach / wstępny czas do 17:20
-// 7. przypisać go do aktualnego taska
-// 8. schować modal
-// 9. wyświetlić tablicę (showUnfinishedTasks())
+  if (e.target.type === "checkbox" && e.target.checked === false) {
+    const index = finishedTasks.findIndex(function (value) {
+      return (
+        +value.id === +e.target.parentElement.parentElement.parentElement.id
+      );
+    });
+    unfinishedTasks.push(finishedTasks[index]);
+    finishedTasks.splice(index, 1);
+    showUnfinishedTasks();
+    showFinishedTasks();
+  }
+});
+
+deleteAllDoneTasksBtn.addEventListener("click", function () {
+  finishedTasks = [];
+  showFinishedTasks();
+});
 
 function showUnfinishedTasks() {
   unfinishedTasksContainer.innerHTML = "";
@@ -107,6 +107,13 @@ function showUnfinishedTasks() {
 }
 
 function showFinishedTasks() {
+  if (!finishedTasks.length) {
+    deleteAllDoneTasksBtn.classList.remove("d-block");
+    deleteAllDoneTasksBtn.classList.add("d-none");
+  } else {
+    deleteAllDoneTasksBtn.classList.add("d-block");
+    deleteAllDoneTasksBtn.classList.remove("d-none");
+  }
   finishedTasksContainer.innerHTML = "";
   for (const task of finishedTasks) {
     const newTaskElement = createCardElement(task, true);
@@ -126,7 +133,7 @@ function createCardElement(task, finished = false) {
         <input
           class="form-check-input"
           type="checkbox"
-          value=""
+          ${finished && "checked"}
           id="flexCheckDefault"
         />
         <label class="form-check-label" for="flexCheckDefault">
