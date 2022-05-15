@@ -2,11 +2,25 @@
 
 ![](./images/logo_lit.jpg)
 
-Projekt powstawał na zajęciach z podstaw frontendu w ramach [Koła Informatycznego LearnIT](https://learnit.how/) :)
+Projekt powstawał podczas zajęć z podstaw frontendu w ramach [Koła Informatycznego LearnIT](https://learnit.how/) :)
 
 URL: [Github Pages](https://asenataluczak.github.io/LIT-To-Do-List/)
 
 ---
+
+### Funkcjonalności
+- Dodawanie zadań
+- Usuwanie zadań
+- Edytowanie zadań
+- Zaliczanie zadań
+- Cofnięcie zaliczenia zadania
+- Zapisywanie zadań w localstorage
+- Usuwanie zaliczonych zadań po domyślnie ustalonym czasie (1 dzień)
+
+#### Brakujące Funkcjonalności
+- Zapisywanie ustawień użytkownika w `localStorage`
+- Usuwanie zaliczonych zadań po czasie wyznaczonym przez użytkownika
+
 
 ### Wykorzystane koncepty
 
