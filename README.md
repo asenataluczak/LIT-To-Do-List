@@ -7,6 +7,8 @@ Projekt powstawał podczas zajęć z podstaw frontendu w ramach [Koła Informaty
 URL: [Github Pages](https://asenataluczak.github.io/LIT-To-Do-List/)
 
 ---
+- branch `master` zawiera cały kod
+- branch `comments` zawiera cały kod oraz komentarze
 
 ### Funkcjonalności
 - Dodawanie zadań
