@@ -31,19 +31,44 @@
 // METODA -> funkcja, która jest własnością jakiegoś obiektu
 
 // Wyselektowanie potrzebnych elementów z HTMLa
-let addTaskForm = document.querySelector("form#addTaskForm");
-let deleteTaskBtn = document.querySelector("#deleteTaskBtn");
-let confirmDeleteBtn = document.querySelector("#confirmDeleteBtn");
-let unfinishedTasksContainer = document.querySelector(
+const addTaskForm = document.querySelector("form#addTaskForm");
+const editTaskForm = document.querySelector("form#editTaskForm");
+const deleteTaskBtn = document.querySelector("#deleteTaskBtn");
+const confirmDeleteBtn = document.querySelector("#confirmDeleteBtn");
+const deleteAllDoneTasksBtn = document.querySelector("#deleteAllDoneTasksBtn");
+const unfinishedTasksContainer = document.querySelector(
   "#unfinishedTasksContainer"
 );
+const finishedTasksContainer = document.querySelector(
+  "#finishedTasksContainer"
+);
 // Stworzenie swojego bootstrapowego modalu, żeby można nim było operować tutaj, nie tylko w HTMLu
-let deleteTaskModal = new bootstrap.Modal(
+const deleteTaskModal = new bootstrap.Modal(
   document.querySelector("#deleteModal")
 );
+const editTaskModal = new bootstrap.Modal(document.querySelector("#editModal"));
+
+const UNFINISHED_TASKS = "unfinished-tasks";
+const FINISHED_TASKS = "finished-tasks";
+const TIME_UNTIL_DELETION = 10000;
 
 // Stworzenie pustej tablicy, do której będziemy dodawać nieukończone taski
 let unfinishedTasks = [];
+let finishedTasks = [];
+
+if (localStorage.getItem(UNFINISHED_TASKS)) {
+  unfinishedTasks = JSON.parse(localStorage.getItem(UNFINISHED_TASKS));
+  showUnfinishedTasks();
+}
+
+if (localStorage.getItem(FINISHED_TASKS)) {
+  finishedTasks = JSON.parse(localStorage.getItem(FINISHED_TASKS));
+  filterDeletedTasks();
+}
+
+setInterval(function () {
+  filterDeletedTasks();
+}, 1000);
 
 // Nasłuchiwanie na event "submit" na addTaskForm i wykonanie funkcji
 addTaskForm.addEventListener("submit", function (event) {
@@ -57,6 +82,7 @@ addTaskForm.addEventListener("submit", function (event) {
       id: Date.now(), // punkt w czasie w milisekundach, żeby id było unikalne i niepowtarzalne
     };
     unfinishedTasks.push(newTask); // dodanie obiektu newTask na koniec tablicy unfinishedTasks
+    localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
     showUnfinishedTasks(); // wywołanie funkcji showUnfinishedTasks (opis niżej)
     addTaskForm.reset(); // zresetowanie forma, żeby po dodaniu taska nie było widać tego co wpisaliśmy
   }
@@ -64,39 +90,129 @@ addTaskForm.addEventListener("submit", function (event) {
 
 // Nasłuchiwanie na event "click" na unfinishedTasksContainer i wykonanie funkcji
 unfinishedTasksContainer.addEventListener("click", function (e) {
+  // zdobycie indexu klikniętego taska w tablicy
+  // (iterujemy przez wszystkie taski w tablicy i sprawdzamy czy ich id zgadza się z id elementu, na który kliknęlismy)
+  const index = unfinishedTasks.findIndex(function (value) {
+    return +value.id === +e.target.parentElement.id; // '+' przed wartością, konwertują ją na typ number
+  });
+
   // sprawdzenie, czy click był wykonany na buttonie z id deleteTaskBtn
   if (e.target.id === "deleteTaskBtn") {
     deleteTaskModal.show(); // otworzenie bootstrapowego modalu
-    // zdobycie indexu klikniętego taska w tablicy
-    // (iterujemy przez wszystkie taski w tablicy i sprawdzamy czy ich id zgadza się z id elementu, na który kliknęlismy)
-    const index = unfinishedTasks.findIndex(function (value) {
-      return +value.id === +e.target.parentElement.id; // '+' przed wartością, konwertują ją na typ number
-    });
     // przypisanie funkcji, która ma się wykonać po kliknięciu na button w modalu
     confirmDeleteBtn.onclick = function () {
       unfinishedTasks.splice(index, 1); // usunięcie tego elementu z tablicy
+      localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
       showUnfinishedTasks(); // update tego co jest na ekranie, czyli ponowne wyświetlenie listy tasków, tym razem bez tego, co usunęliśmy
       deleteTaskModal.hide(); // schowanie bootstrapowego modalu
     };
   }
+  if (e.target.id === "editTaskBtn") {
+    editTaskModal.show();
+    editTaskForm.elements["title"].value = unfinishedTasks[index].title;
+    editTaskForm.elements["description"].value =
+      unfinishedTasks[index].description;
+    editTaskForm.onsubmit = function (event) {
+      event.preventDefault();
+      const editedTask = {
+        title: editTaskForm.elements["title"].value,
+        description: editTaskForm.elements["description"].value,
+      };
+      unfinishedTasks[index] = { ...unfinishedTasks[index], ...editedTask };
+      editTaskModal.hide();
+      showUnfinishedTasks();
+    };
+  }
+  if (e.target.type === "checkbox" && e.target.checked === true) {
+    const index = unfinishedTasks.findIndex(function (value) {
+      return (
+        +value.id === +e.target.parentElement.parentElement.parentElement.id
+      );
+    });
+    finishedTasks.push({
+      ...unfinishedTasks[index],
+      deletionTime: Date.now() + TIME_UNTIL_DELETION,
+    });
+    unfinishedTasks.splice(index, 1);
+    localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
+    localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
+    showUnfinishedTasks();
+    showFinishedTasks();
+  }
 });
 
-// Wyświetlenie wszystkich elementów tablicy unfinishedTasks
+finishedTasksContainer.addEventListener("click", function (e) {
+  if (e.target.id === "deleteTaskBtn") {
+    const index = finishedTasks.findIndex(function (value) {
+      return +value.id === +e.target.parentElement.id;
+    });
+    finishedTasks.splice(index, 1);
+    localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
+    showFinishedTasks();
+  }
+
+  if (e.target.type === "checkbox" && e.target.checked === false) {
+    const index = finishedTasks.findIndex(function (value) {
+      return (
+        +value.id === +e.target.parentElement.parentElement.parentElement.id
+      );
+    });
+    unfinishedTasks.push(finishedTasks[index]);
+    finishedTasks.splice(index, 1);
+    showUnfinishedTasks();
+    showFinishedTasks();
+  }
+});
+
+deleteAllDoneTasksBtn.addEventListener("click", function () {
+  finishedTasks = [];
+  localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
+  showFinishedTasks();
+});
+
+function filterDeletedTasks() {
+  finishedTasks = finishedTasks.filter(function (task) {
+    return Date.now() < task.deletionTime;
+  });
+  localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
+  showFinishedTasks();
+}
+
 function showUnfinishedTasks() {
-  unfinishedTasksContainer.innerHTML = ""; // reset zawartosć containera, żeby przy kolejnych wywołaniach funkcji taski nam się nie powtarzały
-  // pętla iteruje przez wszystkie elemnty tablicy, zmienna task umożliwia odwołanie się do poszczególnego elementu
-  for (let task of unfinishedTasks) {
-    let newTaskElement = document.createElement("div"); // utworzenie diva
-    newTaskElement.className = "card mb-3"; // nadanie mu bootstrapowych klas
-    // dodanie HTMLa do tego diva, z przypisaniem wartości id, title, description
-    newTaskElement.innerHTML = `       
-  <div class="card-body d-flex" id="${task.id}">
+  unfinishedTasksContainer.innerHTML = "";
+  for (const task of unfinishedTasks) {
+    const newTaskElement = createCardElement(task);
+    unfinishedTasksContainer.appendChild(newTaskElement);
+  }
+}
+
+function showFinishedTasks() {
+  deleteAllDoneTasksBtn.classList.remove(
+    finishedTasks.length ? "d-none" : "d-block"
+  );
+  deleteAllDoneTasksBtn.classList.add(
+    finishedTasks.length ? "d-block" : "d-none"
+  );
+  finishedTasksContainer.innerHTML = "";
+  for (const task of finishedTasks) {
+    const newTaskElement = createCardElement(task, true);
+    finishedTasksContainer.appendChild(newTaskElement);
+  }
+}
+
+function createCardElement(task, finished = false) {
+  const newTaskElement = document.createElement("div");
+  newTaskElement.className = "card mb-3";
+  newTaskElement.innerHTML = `       
+  <div class="card-body d-flex ${finished && "text-muted bg-light"}" id="${
+    task.id
+  }">
     <div>
       <div class="form-check">
         <input
           class="form-check-input"
           type="checkbox"
-          value=""
+          ${finished && "checked"}
           id="flexCheckDefault"
         />
         <label class="form-check-label" for="flexCheckDefault">
@@ -108,15 +224,15 @@ function showUnfinishedTasks() {
       </p>
     </div>
     <i
-      class="bi-pencil-square fs-5 btn text-secondary ms-auto"
-      data-bs-toggle="modal"
-      data-bs-target="#editModal"
+      id="editTaskBtn"
+      class="bi-pencil-square fs-5 btn text-secondary ms-auto ${
+        finished && "d-none"
+      }"
     ></i>
     <i
       id="deleteTaskBtn"
-      class="bi-trash-fill fs-5 btn text-secondary"
+      class="bi-trash-fill fs-5 btn text-secondary ${finished && "ms-auto"}"
     ></i>
   </div>`;
-    unfinishedTasksContainer.appendChild(newTaskElement); // dodanie elementu do containera
-  }
+  return newTaskElement;
 }
