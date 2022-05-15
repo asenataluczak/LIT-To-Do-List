@@ -17,7 +17,7 @@ URL: [Github Pages](https://asenataluczak.github.io/LIT-To-Do-List/)
 - Zapisywanie zadań w localstorage
 - Usuwanie zaliczonych zadań po domyślnie ustalonym czasie (1 dzień)
 
-#### Brakujące Funkcjonalności
+#### Brakujące funkcjonalności
 - Zapisywanie ustawień użytkownika w `localStorage`
 - Usuwanie zaliczonych zadań po czasie wyznaczonym przez użytkownika
 
