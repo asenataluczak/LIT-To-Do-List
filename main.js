@@ -48,27 +48,30 @@ const deleteTaskModal = new bootstrap.Modal(
 );
 const editTaskModal = new bootstrap.Modal(document.querySelector("#editModal"));
 
-const UNFINISHED_TASKS = "unfinished-tasks";
-const FINISHED_TASKS = "finished-tasks";
-const TIME_UNTIL_DELETION = 10000;
+const UNFINISHED_TASKS = "unfinished-tasks"; // nazwa elementu w localStorage dla tablicy nieukończonych tasków
+const FINISHED_TASKS = "finished-tasks"; // nazwa elementu w localStorage dla tablicy ukończonych tasków
+const TIME_UNTIL_DELETION = 1000 * 60 * 60 * 24; // czas po jakim ukończone zadanie powinno zostać usunięte (godzina w milisekundach)
 
-// Stworzenie pustej tablicy, do której będziemy dodawać nieukończone taski
+// Stworzenie pustych tablic, do której będziemy dodawać nieukończone i ukończone taski
 let unfinishedTasks = [];
 let finishedTasks = [];
 
+// Sprawdzenie czy w localStorage są zapisane jakieś nieukończone taski
 if (localStorage.getItem(UNFINISHED_TASKS)) {
-  unfinishedTasks = JSON.parse(localStorage.getItem(UNFINISHED_TASKS));
-  showUnfinishedTasks();
+  unfinishedTasks = JSON.parse(localStorage.getItem(UNFINISHED_TASKS)); // Przypisanie tasków z localStorage do tablicy
+  showUnfinishedTasks(); // Wyświetlenie nieukończonych tasków
 }
 
+// Sprawdzenie czy w localStorage są zapisane jakieś ukończone taski
 if (localStorage.getItem(FINISHED_TASKS)) {
-  finishedTasks = JSON.parse(localStorage.getItem(FINISHED_TASKS));
-  filterDeletedTasks();
+  finishedTasks = JSON.parse(localStorage.getItem(FINISHED_TASKS)); // Przypisanie tasków z localStorage do tablicy
+  filterDeletedTasks(); // Odfiltrowanie tasków, których termin usunięcia minął (opis funkcji niżej)
 }
 
+// Uruchomienie funkcji filtrującej ukończone taski co minutę (w milisekundach)
 setInterval(function () {
   filterDeletedTasks();
-}, 1000);
+}, 1000 * 60);
 
 // Nasłuchiwanie na event "submit" na addTaskForm i wykonanie funkcji
 addTaskForm.addEventListener("submit", function (event) {
@@ -82,7 +85,7 @@ addTaskForm.addEventListener("submit", function (event) {
       id: Date.now(), // punkt w czasie w milisekundach, żeby id było unikalne i niepowtarzalne
     };
     unfinishedTasks.push(newTask); // dodanie obiektu newTask na koniec tablicy unfinishedTasks
-    localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
+    localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks)); // Zapisanie tej tablicy w localStorage (localStorage przechowuje tylko dane typu string, dlatego zamieniamy tablicę na string wykorzystując JSON.stringify())
     showUnfinishedTasks(); // wywołanie funkcji showUnfinishedTasks (opis niżej)
     addTaskForm.reset(); // zresetowanie forma, żeby po dodaniu taska nie było widać tego co wpisaliśmy
   }
@@ -102,46 +105,58 @@ unfinishedTasksContainer.addEventListener("click", function (e) {
     // przypisanie funkcji, która ma się wykonać po kliknięciu na button w modalu
     confirmDeleteBtn.onclick = function () {
       unfinishedTasks.splice(index, 1); // usunięcie tego elementu z tablicy
-      localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
+      localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks)); // Zapisanie tablicy w localStorage
       showUnfinishedTasks(); // update tego co jest na ekranie, czyli ponowne wyświetlenie listy tasków, tym razem bez tego, co usunęliśmy
       deleteTaskModal.hide(); // schowanie bootstrapowego modalu
     };
   }
+
+  // sprawdzenie, czy click był wykonany na buttonie z id editTaskBtn
   if (e.target.id === "editTaskBtn") {
     editTaskModal.show();
-    editTaskForm.elements["title"].value = unfinishedTasks[index].title;
+    editTaskForm.elements["title"].value = unfinishedTasks[index].title; // Uzupełnienie forma aktualną nazwą taska
     editTaskForm.elements["description"].value =
-      unfinishedTasks[index].description;
+      unfinishedTasks[index].description; // Uzupełnienie forma aktualnym opisem zadania
+
+    // Przypisanie funkcji, która ma się wykonać po wydarzeniu submit na formie editTaskForm
     editTaskForm.onsubmit = function (event) {
       event.preventDefault();
       const editedTask = {
         title: editTaskForm.elements["title"].value,
         description: editTaskForm.elements["description"].value,
       };
+
+      // Update taska - tworzymy nowy obiekt wykorzystując spread operator (...), najpierw kopiując wartości z unfinishedTasks[index], potem z editedTask
+      // (Aby wartości z editedTask nadpisały te poprzednie, jeśli jakieś się zmieniły, ale zachowane zostały wartości, które się nie zmieniły)
       unfinishedTasks[index] = { ...unfinishedTasks[index], ...editedTask };
       editTaskModal.hide();
       showUnfinishedTasks();
     };
   }
+
+  // sprawdzenie, czy click był wykonany na checkboxie z wartością true, czyli czy go zaznaczamy
   if (e.target.type === "checkbox" && e.target.checked === true) {
+    // zdobycie indexu klikniętego taska w tablicy - ponownie, ponieważ checkbox jest bardziej zagnieżdżony w HTMLowym elemencie (stąd 3 razy parentElement)
     const index = unfinishedTasks.findIndex(function (value) {
       return (
         +value.id === +e.target.parentElement.parentElement.parentElement.id
       );
     });
+    // Dodanie taska do tablicy ze skończonymi taskami
     finishedTasks.push({
       ...unfinishedTasks[index],
-      deletionTime: Date.now() + TIME_UNTIL_DELETION,
+      deletionTime: Date.now() + TIME_UNTIL_DELETION, // Zapisujemy datę (w milisekundach), po której ten konkretny task powinien zostać usunięty (teraz + 1 dzień)
     });
-    unfinishedTasks.splice(index, 1);
-    localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
-    localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
+    unfinishedTasks.splice(index, 1); // Usunięcie taska z tablicy z nieskończonymi taskami
+    localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks)); // Zapisanie skończonych tasków w localStorage
+    localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks)); // Zapisanie nieskońćzonych tasków w localStorage
     showUnfinishedTasks();
     showFinishedTasks();
   }
 });
 
 finishedTasksContainer.addEventListener("click", function (e) {
+  // Usunięcie skończonego taska
   if (e.target.id === "deleteTaskBtn") {
     const index = finishedTasks.findIndex(function (value) {
       return +value.id === +e.target.parentElement.id;
@@ -151,6 +166,8 @@ finishedTasksContainer.addEventListener("click", function (e) {
     showFinishedTasks();
   }
 
+  // Cofnięcie zaliczenia zadania
+  // sprawdzenie, czy click był wykonany na checkboxie z wartością false, czyli czy go odznaczamy
   if (e.target.type === "checkbox" && e.target.checked === false) {
     const index = finishedTasks.findIndex(function (value) {
       return (
@@ -164,13 +181,16 @@ finishedTasksContainer.addEventListener("click", function (e) {
   }
 });
 
+// Usunięcie wszystkich skończonych tasków
 deleteAllDoneTasksBtn.addEventListener("click", function () {
-  finishedTasks = [];
+  finishedTasks = []; // Nadpisanie tablicy z taskami pustą tablicą, czyli usunięcie wszystkich skończonych tasków
   localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
   showFinishedTasks();
 });
 
+// Odfiltrowywanie tasków, których termin usunięcia minął
 function filterDeletedTasks() {
+  // Funkcja filter() sprawdza, czy czas usunięcia taska jest większy (jest póżniej) niż aktualna data i zwraca go tylko jeśli to prawda
   finishedTasks = finishedTasks.filter(function (task) {
     return Date.now() < task.deletionTime;
   });
@@ -179,30 +199,40 @@ function filterDeletedTasks() {
 }
 
 function showUnfinishedTasks() {
-  unfinishedTasksContainer.innerHTML = "";
+  unfinishedTasksContainer.innerHTML = ""; // reset zawartosć containera, żeby przy kolejnych wywołaniach funkcji taski nam się nie powtarzały
+  // pętla iteruje przez wszystkie elemnty tablicy, zmienna task umożliwia odwołanie się do poszczególnego elementu
   for (const task of unfinishedTasks) {
-    const newTaskElement = createCardElement(task);
-    unfinishedTasksContainer.appendChild(newTaskElement);
+    const newTaskElement = createCardElement(task); // Przypisanie do newTaskElement diva, stworzonego w createCardElement()
+    unfinishedTasksContainer.appendChild(newTaskElement); // dodanie elementu do containera
   }
 }
 
 function showFinishedTasks() {
+  // Wykorzystanie TERNARY OPERATOR (? :), aby przycisk do usuwania wszystkich skończonych tasków był widoczny tylko wtedy, jeśli takie są
+  // Jeśli są jakieś taski w tablicy finishedTasks, usuń klasę d-none, w przeciwnym razie usuń klasę d-block
   deleteAllDoneTasksBtn.classList.remove(
     finishedTasks.length ? "d-none" : "d-block"
   );
+  // Jeśli są jakieś taski w tablicy finishedTasks, dodaj klasę d-block, w przeciwnym razie dodaj klasę d-none
   deleteAllDoneTasksBtn.classList.add(
     finishedTasks.length ? "d-block" : "d-none"
   );
-  finishedTasksContainer.innerHTML = "";
+  finishedTasksContainer.innerHTML = ""; // reset zawartosć containera, żeby przy kolejnych wywołaniach funkcji taski nam się nie powtarzały
+  // pętla iteruje przez wszystkie elemnty tablicy, zmienna task umożliwia odwołanie się do poszczególnego elementu
   for (const task of finishedTasks) {
-    const newTaskElement = createCardElement(task, true);
-    finishedTasksContainer.appendChild(newTaskElement);
+    const newTaskElement = createCardElement(task, true); // Przypisanie do newTaskElement diva, stworzonego w createCardElement(), drugi argument to true, ponieważ task jest skończony
+    finishedTasksContainer.appendChild(newTaskElement); // dodanie elementu do containera
   }
 }
 
+// Tworzenie HTMLowego elementu dla taska, w zależności czy jest to task skończony, czy nie
 function createCardElement(task, finished = false) {
-  const newTaskElement = document.createElement("div");
-  newTaskElement.className = "card mb-3";
+  const newTaskElement = document.createElement("div"); // utworzenie diva
+  newTaskElement.className = "card mb-3"; // nadanie mu bootstrapowych klas
+
+  // finished && "checked" <- jeśli finished === true (jeśli task jest skończony), zwróć "checked" (w tym wypadku -> jeśli task jest skończony, to checkbox ma być zaznaczony)
+
+  // Dodanie do tego diva HTMLa, z przypisaniem wartości id, title, description
   newTaskElement.innerHTML = `       
   <div class="card-body d-flex ${finished && "text-muted bg-light"}" id="${
     task.id
