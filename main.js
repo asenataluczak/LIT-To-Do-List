@@ -6,13 +6,17 @@ const deleteAllDoneTasksBtn = document.querySelector("#deleteAllDoneTasksBtn");
 const unfinishedTasksContainer = document.querySelector(
   "#unfinishedTasksContainer"
 );
-const finishedTasksContainer = document.querySelector("#finishedTasksContainer");
+const finishedTasksContainer = document.querySelector(
+  "#finishedTasksContainer"
+);
 const deleteTaskModal = new bootstrap.Modal(
   document.querySelector("#deleteModal")
 );
 const editTaskModal = new bootstrap.Modal(document.querySelector("#editModal"));
+
 const UNFINISHED_TASKS = "unfinished-tasks";
 const FINISHED_TASKS = "finished-tasks";
+const TIME_UNTIL_DELETION = 10000;
 
 let unfinishedTasks = [];
 let finishedTasks = [];
@@ -24,8 +28,12 @@ if (localStorage.getItem(UNFINISHED_TASKS)) {
 
 if (localStorage.getItem(FINISHED_TASKS)) {
   finishedTasks = JSON.parse(localStorage.getItem(FINISHED_TASKS));
-  showFinishedTasks();
+  filterDeletedTasks();
 }
+
+setInterval(function () {
+  filterDeletedTasks();
+}, 1000);
 
 addTaskForm.addEventListener("submit", function (event) {
   event.preventDefault();
@@ -43,9 +51,9 @@ addTaskForm.addEventListener("submit", function (event) {
 });
 
 unfinishedTasksContainer.addEventListener("click", function (e) {
-  const index = unfinishedTasks.findIndex(
-    (value) => +value.id === +e.target.parentElement.id
-  );
+  const index = unfinishedTasks.findIndex(function (value) {
+    return +value.id === +e.target.parentElement.id;
+  });
   if (e.target.id === "deleteTaskBtn") {
     deleteTaskModal.show();
     confirmDeleteBtn.onclick = function () {
@@ -66,7 +74,6 @@ unfinishedTasksContainer.addEventListener("click", function (e) {
         title: editTaskForm.elements["title"].value,
         description: editTaskForm.elements["description"].value,
       };
-      // ...spread operator
       unfinishedTasks[index] = { ...unfinishedTasks[index], ...editedTask };
       editTaskModal.hide();
       showUnfinishedTasks();
@@ -78,7 +85,10 @@ unfinishedTasksContainer.addEventListener("click", function (e) {
         +value.id === +e.target.parentElement.parentElement.parentElement.id
       );
     });
-    finishedTasks.push(unfinishedTasks[index]);
+    finishedTasks.push({
+      ...unfinishedTasks[index],
+      deletionTime: Date.now() + TIME_UNTIL_DELETION,
+    });
     unfinishedTasks.splice(index, 1);
     localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
     localStorage.setItem(UNFINISHED_TASKS, JSON.stringify(unfinishedTasks));
@@ -116,6 +126,14 @@ deleteAllDoneTasksBtn.addEventListener("click", function () {
   showFinishedTasks();
 });
 
+function filterDeletedTasks() {
+  finishedTasks = finishedTasks.filter(function (task) {
+    return Date.now() < task.deletionTime;
+  });
+  localStorage.setItem(FINISHED_TASKS, JSON.stringify(finishedTasks));
+  showFinishedTasks();
+}
+
 function showUnfinishedTasks() {
   unfinishedTasksContainer.innerHTML = "";
   for (const task of unfinishedTasks) {
@@ -125,13 +143,8 @@ function showUnfinishedTasks() {
 }
 
 function showFinishedTasks() {
-  if (!finishedTasks.length) {
-    deleteAllDoneTasksBtn.classList.remove("d-block");
-    deleteAllDoneTasksBtn.classList.add("d-none");
-  } else {
-    deleteAllDoneTasksBtn.classList.add("d-block");
-    deleteAllDoneTasksBtn.classList.remove("d-none");
-  }
+  deleteAllDoneTasksBtn.classList.remove(finishedTasks.length ? 'd-none' : 'd-block');
+  deleteAllDoneTasksBtn.classList.add(finishedTasks.length ? 'd-block' : 'd-none');
   finishedTasksContainer.innerHTML = "";
   for (const task of finishedTasks) {
     const newTaskElement = createCardElement(task, true);
